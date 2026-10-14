@@ -8,9 +8,9 @@
 
 ## GitHub Pages
 
-建立 `ChienIKao/vocab-card` repository，將專案上傳至 `main` 分支。在 **Settings → Pages** 選擇 **Deploy from a branch**，來源使用 **main / (root)**。
+[線上版本](https://chienikao.github.io/vocab-card/) · [GitHub repository](https://github.com/ChienIKao/vocab-card)
 
-預計發布網址：`https://ChienIKao.github.io/vocab-card/`。
+GitHub Pages 的發布來源為 **main / (root)**，推送至 `main` 後會自動部署。
 
 ## 資料儲存
 
