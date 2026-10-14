@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && request.auth.uid == 'A2uwyRujAFYyZPbzBidN3YDy6S23';
+    }
+    match /users/{userId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['order'])
+        && request.resource.data.order is list;
+      match /cards/{cardId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.keys().hasAll(['id', 'category', 'word', 'phonetic', 'meaning', 'sentenceEn', 'sentenceZh', 'note'])
+          && request.resource.data.keys().hasOnly(['id', 'category', 'word', 'phonetic', 'meaning', 'sentenceEn', 'sentenceZh', 'note'])
+          && request.resource.data.id == cardId
+          && request.resource.data.category is string
+          && request.resource.data.word is string && request.resource.data.word.size() > 0
+          && request.resource.data.phonetic is string
+          && request.resource.data.meaning is string && request.resource.data.meaning.size() > 0
+          && request.resource.data.sentenceEn is string && request.resource.data.sentenceEn.size() > 0
+          && request.resource.data.sentenceZh is string
+          && request.resource.data.note is string;
+      }
+    }
+  }
+}

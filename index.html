@@ -136,6 +136,12 @@
         </div>
       </div>
     </div>
+    <div id="cloudPanel" class="max-w-4xl mx-auto px-3 sm:px-4 pb-2.5 flex flex-wrap items-center gap-2 text-xs text-stone-600">
+      <span id="cloudStatus" role="status" aria-live="polite" class="flex-1">目前使用本機詞庫</span>
+      <span id="cloudAccount"></span>
+      <div id="googleLoginBtn" class="min-h-[36px] flex items-center">正在載入 Google 登入…</div>
+      <button type="button" id="googleLogoutBtn" class="hidden min-h-[36px] px-3 rounded-xl bg-white border border-stone-300 text-stone-800">登出</button>
+    </div>
   </header>
 
   <!-- 主要內容區：針對 iPhone 16 Pro 單手閱讀與高度自適應最佳化 -->
@@ -387,7 +393,7 @@
       <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
         <div>
           <h3 id="drawerTitle" class="font-bold text-lg text-slate-900">單字庫管理</h3>
-          <p class="text-xs text-slate-600">所有變更會自動儲存在您的裝置中</p>
+          <p id="storageNote" class="text-xs text-slate-600">所有變更會自動儲存在您的裝置中</p>
         </div>
         <button type="button" onclick="toggleManageDrawer()" aria-label="關閉單字庫管理" class="min-w-[40px] min-h-[40px] rounded-xl text-slate-500 hover:bg-slate-100 flex items-center justify-center">
           <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
@@ -418,7 +424,10 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'anita_custom_flashcards_v2';
+    const GUEST_STORAGE_KEY = 'anita_custom_flashcards_v2';
+    let storageKey = GUEST_STORAGE_KEY;
+    let savedCards = [];
+    let editingEnabled = true;
 
     const defaultCards = [
       { id: 'c1', category: '行程與日常', word: 'reschedule', phonetic: '/ˌriːˈskedʒ.uːl/', meaning: '(v.) 重新安排時間、改期', sentenceEn: 'Something came up. Can we reschedule our meeting for tomorrow?', sentenceZh: '臨時有點事。我們可以把會議改到明天嗎？', note: '常見搭配：reschedule + 活動 + for + 新時間' },
@@ -466,23 +475,27 @@
       return str.trim().replace(/^[\(（\[]+|[\)）\]]+$/g, '').trim();
     }
 
-    function loadCards() {
-      const saved = localStorage.getItem(STORAGE_KEY);
+    function loadCards(includeDefaults = true) {
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         try {
           allCards = JSON.parse(saved);
         } catch (e) {
-          allCards = [...defaultCards];
+          allCards = includeDefaults ? structuredClone(defaultCards) : [];
         }
       } else {
-        allCards = [...defaultCards];
+        allCards = includeDefaults ? structuredClone(defaultCards) : [];
       }
-      if (!allCards.length) allCards = [...defaultCards];
+      if (!Array.isArray(allCards)) allCards = includeDefaults ? structuredClone(defaultCards) : [];
+      savedCards = structuredClone(allCards);
     }
 
     function saveCardsToStorage() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(allCards));
+      const before = savedCards;
+      localStorage.setItem(storageKey, JSON.stringify(allCards));
+      savedCards = structuredClone(allCards);
       updateTotalBadge();
+      window.dispatchEvent(new CustomEvent('deckchange', { detail: { before, cards: savedCards } }));
     }
 
     function updateTotalBadge() {
@@ -497,12 +510,19 @@
     function renderCategoryTabs() {
       const categories = ['全部', ...new Set(allCards.map(c => c.category || '未分類'))];
       const container = document.getElementById('categoryTabs');
-      container.innerHTML = categories.map(cat => {
+      container.replaceChildren(...categories.map(cat => {
         const active = cat === currentCategory;
-        return `<button type="button" role="tab" aria-selected="${active}" onclick="selectCategory('${cat.replace(/'/g, "\\'")}')" class="min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('role', 'tab');
+        button.setAttribute('aria-selected', active);
+        button.textContent = cat;
+        button.className = `min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
           active ? 'bg-stone-800 text-white shadow-xs' : 'bg-[#faf8f5] text-stone-700 hover:bg-stone-200/70 border border-stone-300/80'
-        }">${cat}</button>`;
-      }).join('');
+        }`;
+        button.addEventListener('click', () => selectCategory(cat));
+        return button;
+      }));
     }
 
     function selectCategory(cat) {
@@ -535,6 +555,16 @@
     function renderCurrentCard() {
       const filtered = getFilteredCards();
       if (filtered.length === 0) {
+        if (allCards.length === 0) {
+          document.getElementById('currentIndexText').textContent = '0';
+          document.getElementById('filteredTotalText').textContent = '0';
+          document.getElementById('cardWord').textContent = '尚無單字卡';
+          for (const id of ['cardCategoryFront', 'cardPhonetic', 'cardMeaning', 'cardSentenceEn', 'cardSentenceZh', 'srCardAnnouncement']) {
+            document.getElementById(id).textContent = '';
+          }
+          document.getElementById('cardNoteBox').classList.add('hidden');
+          return;
+        }
         currentCategory = '全部';
         renderCategoryTabs();
         return renderCurrentCard();
@@ -579,6 +609,7 @@
 
     function nextCard() {
       const filtered = getFilteredCards();
+      if (!filtered.length) return;
       currentIndex = (currentIndex + 1) % filtered.length;
       setFlipState(false);
       setTimeout(renderCurrentCard, 120);
@@ -586,6 +617,7 @@
 
     function prevCard() {
       const filtered = getFilteredCards();
+      if (!filtered.length) return;
       currentIndex = (currentIndex - 1 + filtered.length) % filtered.length;
       setFlipState(false);
       setTimeout(renderCurrentCard, 120);
@@ -770,7 +802,7 @@
         showToast('單字卡已更新！');
       } else {
         const newCard = {
-          id: 'custom_' + Date.now(),
+          id: 'custom_' + crypto.randomUUID(),
           category,
           word,
           phonetic: phonetic || '/ - /',
@@ -810,7 +842,10 @@
     }
 
     function downloadStandaloneApp() {
-      let htmlSource = document.documentElement.outerHTML;
+      const standalone = document.documentElement.cloneNode(true);
+      standalone.querySelector('#cloudPanel')?.remove();
+      standalone.querySelector('script[src="./cloud.js"]')?.remove();
+      let htmlSource = standalone.outerHTML;
       const currentDeckJson = JSON.stringify(allCards, null, 2);
       htmlSource = htmlSource.replace(
         /const defaultCards = \[[\s\S]*?\];/,
@@ -887,22 +922,28 @@
         <div role="listitem" class="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-amber-400 transition flex items-center justify-between gap-3">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap">
-              <span lang="en" class="font-bold text-slate-900">${c.word}</span>
-              <span class="text-xs font-mono text-[#8A4630]">${c.phonetic || ''}</span>
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px]">${c.category || '未分類'}</span>
+              <span lang="en" class="font-bold text-slate-900">${escapeHtml(c.word)}</span>
+              <span class="text-xs font-mono text-[#8A4630]">${escapeHtml(c.phonetic || '')}</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px]">${escapeHtml(c.category || '未分類')}</span>
             </div>
-            <div class="text-xs text-slate-700 truncate mt-0.5">${c.meaning}</div>
+            <div class="text-xs text-slate-700 truncate mt-0.5">${escapeHtml(c.meaning)}</div>
           </div>
           <div class="flex items-center gap-1">
-            <button type="button" onclick="openEditModalById('${c.id}')" aria-label="編輯 ${c.word}" class="min-w-[38px] min-h-[38px] p-2 text-slate-500 hover:text-indigo-600 rounded-lg">
+            <button type="button" data-edit-card="${escapeHtml(c.id)}" aria-label="編輯 ${escapeHtml(c.word)}" class="min-w-[38px] min-h-[38px] p-2 text-slate-500 hover:text-indigo-600 rounded-lg" ${editingEnabled ? '' : 'disabled'}>
               <i class="fa-solid fa-pen" aria-hidden="true"></i>
             </button>
-            <button type="button" onclick="deleteCardById('${c.id}')" aria-label="刪除 ${c.word}" class="min-w-[38px] min-h-[38px] p-2 text-slate-500 hover:text-rose-600 rounded-lg">
+            <button type="button" data-delete-card="${escapeHtml(c.id)}" aria-label="刪除 ${escapeHtml(c.word)}" class="min-w-[38px] min-h-[38px] p-2 text-slate-500 hover:text-rose-600 rounded-lg" ${editingEnabled ? '' : 'disabled'}>
               <i class="fa-solid fa-trash" aria-hidden="true"></i>
             </button>
           </div>
         </div>
       `).join('');
+      container.querySelectorAll('[data-edit-card]').forEach(button => button.addEventListener('click', () => openEditModalById(button.dataset.editCard)));
+      container.querySelectorAll('[data-delete-card]').forEach(button => button.addEventListener('click', () => deleteCardById(button.dataset.deleteCard)));
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
     }
 
     function deleteCardById(id) {
@@ -936,7 +977,7 @@
         try {
           const imported = JSON.parse(ev.target.result);
           if (Array.isArray(imported) && imported.length > 0) {
-            allCards = imported;
+            allCards = window.vocabNormalizeDeck ? window.vocabNormalizeDeck(imported) : imported;
             saveCardsToStorage();
             currentCategory = '全部';
             currentIndex = 0;
@@ -988,6 +1029,42 @@
     renderCategoryTabs();
     renderCurrentCard();
     loadVoices();
+
+    window.vocabApp = {
+      getCards: () => structuredClone(allCards),
+      switchAccount(uid) {
+        storageKey = uid ? `vocab-card:${uid}` : GUEST_STORAGE_KEY;
+        loadCards(!uid);
+        currentCategory = '全部';
+        currentIndex = 0;
+        setFlipState(false);
+        closeCardModal();
+        closeBatchModal();
+        this.applyCards(allCards);
+      },
+      applyCards(cards) {
+        const currentId = getFilteredCards()[currentIndex]?.id;
+        allCards = structuredClone(cards);
+        savedCards = structuredClone(cards);
+        localStorage.setItem(storageKey, JSON.stringify(cards));
+        if (currentCategory !== '全部' && !cards.some(card => card.category === currentCategory)) currentCategory = '全部';
+        const selectedIndex = getFilteredCards().findIndex(card => card.id === currentId);
+        currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
+        updateTotalBadge();
+        renderCategoryTabs();
+        renderCurrentCard();
+        renderManageList();
+      },
+      setEditingEnabled(enabled) {
+        editingEnabled = enabled;
+        document.querySelectorAll('button[onclick]').forEach(button => {
+          if (/^(openAddModal|openBatchModal|editCurrentCard|saveCardFromModal|processBatchImport|resetToDefaultDeck)\(/.test(button.getAttribute('onclick'))) button.disabled = !enabled;
+        });
+        document.querySelectorAll('input[type="file"]').forEach(input => { input.disabled = !enabled; });
+        renderManageList();
+      }
+    };
   </script>
+  <script type="module" src="./cloud.js"></script>
 </body>
 </html>
