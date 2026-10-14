@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>實用日常英文單字閃卡 | Daily English Flashcards</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #f6f4f0 0%, #eae6df 100%);
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .transform-style-3d {
+        transition: none;
+      }
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+    .card-flipped {
+      transform: rotateY(180deg);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* a11y 明確的鍵盤焦點外框 */
+    :focus-visible {
+      outline: 3px solid #b35b3e !important;
+      outline-offset: 2px !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between sm:justify-start">
+
+  <!-- a11y 跳過導覽列連結 -->
+  <a href="#mainContent" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2.5 focus:bg-stone-900 focus:text-white focus:rounded-xl focus:font-semibold focus:shadow-lg">
+    跳至主要閃卡區
+  </a>
+
+  <!-- 頂部訊息提示框 (Toast) - 具備 ARIA role="status" -->
+  <div id="toastBox" role="status" aria-live="polite" aria-atomic="true" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all duration-300 w-[90%] max-w-sm">
+    <div id="toastContent" class="px-5 py-3 rounded-2xl shadow-lg bg-slate-800 text-white text-sm font-medium flex items-center justify-center gap-2">
+      <i class="fa-solid fa-circle-check text-amber-400" aria-hidden="true"></i>
+      <span id="toastText">儲存成功！</span>
+    </div>
+  </div>
+
+  <!-- 頂部導覽列：針對 iPhone 16 Pro (402px) 進行緊湊網格與觸控目標最佳化 -->
+  <header role="banner" class="bg-[#faf8f5]/95 backdrop-blur-md shadow-xs sticky top-0 z-30 border-b border-stone-200/80">
+    <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#b85d3d] text-white flex items-center justify-center shadow-xs shrink-0" aria-hidden="true">
+            <i class="fa-solid fa-layer-group text-base sm:text-lg"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-base sm:text-lg text-stone-900 leading-tight">日常英文學習閃卡</h1>
+            <p class="text-[11px] sm:text-xs text-stone-600">可自由新增 · 沉穩女聲 1x 語速</p>
+          </div>
+        </div>
+
+        <!-- 手機版右上角快速功能鍵 (下載與語音設定) -->
+        <div class="flex items-center gap-1.5 sm:hidden">
+          <button type="button" onclick="downloadStandaloneApp()" aria-label="下載最新閃卡檔" class="min-w-[40px] min-h-[40px] px-2.5 py-2 rounded-xl bg-[#efe6dd] active:bg-[#e5d8cb] text-[#693d2b] text-xs font-semibold transition flex items-center justify-center">
+            <i class="fa-solid fa-download" aria-hidden="true"></i>
+          </button>
+          <button type="button" id="voiceSettingsBtnMobile" onclick="toggleVoiceSettings()" aria-expanded="false" aria-controls="voicePanel" aria-label="開啟語音設定" class="min-w-[40px] min-h-[40px] p-2 rounded-xl bg-stone-200/80 active:bg-stone-300 text-stone-700 transition flex items-center justify-center">
+            <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 導覽操作按鈕組：iPhone 16 Pro 上採用 4 欄均分、確保 44px 友善觸控高度 -->
+      <nav aria-label="閃卡工具列" class="grid grid-cols-4 sm:flex sm:items-center gap-1.5 sm:gap-2">
+        <button type="button" onclick="openAddModal()" class="min-h-[42px] sm:min-h-[38px] px-2 sm:px-3.5 py-2 rounded-xl bg-[#b85d3d] hover:bg-[#a34e30] text-white text-xs sm:text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i> <span>新增</span><span class="hidden sm:inline">單字</span>
+        </button>
+        <button type="button" onclick="openBatchModal()" class="min-h-[42px] sm:min-h-[38px] px-2 sm:px-3.5 py-2 rounded-xl bg-stone-200/80 hover:bg-stone-300/80 text-stone-800 text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1">
+          <i class="fa-solid fa-file-import" aria-hidden="true"></i> <span>匯入</span>
+        </button>
+        <button type="button" onclick="toggleManageDrawer()" aria-haspopup="dialog" class="min-h-[42px] sm:min-h-[38px] px-2 sm:px-3.5 py-2 rounded-xl bg-stone-200/80 hover:bg-stone-300/80 text-stone-800 text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1">
+          <i class="fa-solid fa-list-check" aria-hidden="true"></i> <span>詞庫(<span id="totalCountBadge">25</span>)</span>
+        </button>
+        <button type="button" onclick="openMobileGuideModal()" aria-haspopup="dialog" class="min-h-[42px] sm:min-h-[38px] px-2 sm:px-3 py-2 rounded-xl bg-[#4d7864] hover:bg-[#3f6453] text-white text-xs sm:text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1">
+          <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i> <span>手機版</span>
+        </button>
+        <button type="button" onclick="downloadStandaloneApp()" class="hidden sm:flex min-h-[38px] px-3.5 py-2 rounded-xl bg-[#efe6dd] hover:bg-[#e5d8cb] text-[#693d2b] text-sm font-semibold transition items-center gap-1.5" title="下載最新閃卡檔">
+          <i class="fa-solid fa-download" aria-hidden="true"></i> 下載閃卡檔
+        </button>
+        <button type="button" id="voiceSettingsBtnDesktop" onclick="toggleVoiceSettings()" aria-expanded="false" aria-controls="voicePanel" aria-label="語音設定" class="hidden sm:flex min-h-[38px] p-2.5 rounded-xl bg-stone-200/80 hover:bg-stone-300/80 text-stone-700 transition items-center justify-center" title="語音設定 Voice Settings">
+          <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+        </button>
+      </nav>
+    </div>
+
+    <!-- 語音設定面板 -->
+    <div id="voicePanel" role="region" aria-label="英文語音設定" class="hidden bg-[#f4ece4] border-t border-[#e2d5c8] px-3 sm:px-4 py-3">
+      <div class="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 text-sm">
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <label for="voiceSelect" class="font-medium text-stone-900"><i class="fa-solid fa-volume-high mr-1 text-[#b85d3d]" aria-hidden="true"></i> 英文女聲發音員：</label>
+          <select id="voiceSelect" class="flex-1 sm:flex-initial min-h-[40px] rounded-lg border border-stone-300 bg-[#faf8f5] px-2.5 py-1.5 text-stone-800 text-sm focus:outline-none"></select>
+        </div>
+        <div class="flex items-center justify-between sm:justify-end gap-4 flex-wrap">
+          <label for="calmToggle" class="flex items-center gap-2 cursor-pointer text-stone-900 font-medium min-h-[36px]">
+            <input type="checkbox" id="calmToggle" checked class="w-4 h-4 rounded text-[#b85d3d] focus:ring-[#b85d3d]">
+            <span>沉穩溫和女聲</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <label for="rateSlider" class="text-stone-700 font-medium">語速：</label>
+            <input type="range" id="rateSlider" min="0.75" max="1.25" step="0.05" value="1.00" aria-valuemin="0.75" aria-valuemax="1.25" aria-valuenow="1.00" class="w-24 accent-[#b85d3d]">
+            <span id="rateValue" class="text-xs font-mono text-stone-800 font-semibold w-10" aria-live="polite">1.00x</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容區：針對 iPhone 16 Pro 單手閱讀與高度自適應最佳化 -->
+  <main id="mainContent" role="main" class="max-w-3xl w-full mx-auto px-3.5 sm:px-4 mt-3 sm:mt-5 flex-1 flex flex-col justify-center sm:justify-start">
+    
+    <!-- 分類篩選與進度列 -->
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <div role="tablist" aria-label="單字分類篩選" class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 pr-2" id="categoryTabs"></div>
+      <div class="text-xs sm:text-sm font-medium text-stone-700 shrink-0" aria-live="polite" aria-atomic="true">
+        <span class="sr-only">目前進度：</span>第 <span id="currentIndexText" class="text-stone-900 font-bold">1</span> / <span id="filteredTotalText">25</span> 張
+      </div>
+    </div>
+
+    <!-- 螢幕閱讀器專用動態朗讀狀態區 -->
+    <div id="srCardAnnouncement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- 3D 翻轉閃卡：支援鍵盤 Enter/Space、點擊翻面與手機左右滑動換卡 -->
+    <div id="flashcardContainer"
+         role="region"
+         aria-roledescription="互動學習閃卡"
+         aria-label="英文單字閃卡，點擊或按空白鍵可翻面，左右滑動可切換上下張"
+         tabindex="0"
+         onclick="flipCard()"
+         onkeydown="handleCardKeydown(event)"
+         class="perspective-1000 w-full h-[380px] sm:h-[420px] cursor-pointer select-none rounded-3xl">
+      <div id="flashcardInner" class="transform-style-3d relative w-full h-full">
+        
+        <!-- 正面 Front：調低亮度的溫潤暗暖杏色 + 符合 WCAG AA 對比度的深棕與陶土橘 -->
+        <section id="cardFrontSection" aria-hidden="false" class="backface-hidden absolute inset-0 bg-gradient-to-br from-[#F2ECE4] via-[#EBE3D8] to-[#E3D9CC] rounded-3xl shadow-md border border-[#D4C5B4] p-5 sm:p-8 flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2">
+            <span id="cardCategoryFront" class="px-3 py-1 rounded-full text-xs font-semibold bg-[#DFCBB8] text-[#4A2E21]">分類</span>
+            <button type="button" onclick="editCurrentCard(event)" aria-label="編輯目前這張閃卡" class="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-[#DFD3C6] hover:bg-[#D4C5B6] active:scale-95 text-[#3D2B22] text-xs font-semibold transition flex items-center gap-1.5">
+              <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> 編輯
+            </button>
+          </div>
+
+          <!-- 正面三行核心呈現 (針對 iPhone 16 Pro 393~402px 寬度微調字級與行高，防止長單字截斷) -->
+          <div class="my-auto text-center space-y-3 sm:space-y-4 px-1">
+            <h2 id="cardWord" lang="en" class="text-3xl sm:text-5xl font-bold text-[#2B221C] tracking-tight break-words leading-tight">reschedule</h2>
+            <p id="cardPhonetic" class="text-lg sm:text-2xl font-mono text-[#8A4630] font-semibold">/ˌriːˈskedʒ.uːl/</p>
+            <p id="cardMeaning" class="text-lg sm:text-2xl font-medium text-[#3F3129] leading-snug">(v.) 重新安排時間、改期</p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center gap-1.5">
+            <button type="button" onclick="speakFront(event)" aria-label="朗讀正面英文單字" class="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#B85D3D] hover:bg-[#A34E30] active:scale-95 text-[#FAF6F2] text-lg transition flex items-center justify-center shadow-sm">
+              <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
+            </button>
+            <span class="text-[11px] text-[#6E5A4F] sm:hidden">點卡片翻面 · 左右滑動換張</span>
+          </div>
+        </section>
+
+        <!-- 背面 Back：調低亮度的莫蘭迪深柔和綠 (#4d7864) + 溫和暖米白字體 -->
+        <section id="cardBackSection" aria-hidden="true" class="backface-hidden rotate-y-180 absolute inset-0 bg-[#4d7864] text-[#F5F2EB] rounded-3xl shadow-md border border-[#3f6453] p-5 sm:p-8 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-black/25 text-[#F0F5F2]">母語實用表達 · A1-B1</span>
+            <span class="text-xs text-[#E2ECE7] sm:hidden">點擊翻回正面</span>
+          </div>
+
+          <!-- 背面例句與無括號繁體中文 + 喇叭圖示 -->
+          <div class="my-auto space-y-3.5 sm:space-y-5 text-center px-1 sm:px-2">
+            <p id="cardSentenceEn" lang="en" class="text-xl sm:text-3xl font-semibold text-[#FAF8F5] leading-snug break-words">
+              Something came up. Can we reschedule our meeting for tomorrow?
+            </p>
+            <p id="cardSentenceZh" class="text-base sm:text-xl text-[#E6F0EC] font-medium leading-relaxed">
+              臨時有點事。我們可以把會議改到明天嗎？
+            </p>
+            <div class="pt-1 flex items-center justify-center">
+              <button type="button" onclick="speakBack(event)" aria-label="朗讀背面英文例句" class="w-12 h-12 rounded-full bg-[#EFE8DF] hover:bg-white active:scale-95 text-[#355647] text-lg transition flex items-center justify-center shadow-sm">
+                <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="cardNoteBox" class="flex items-center justify-center">
+            <span id="cardNote" class="inline-block px-3 py-1.5 rounded-xl bg-black/25 text-xs sm:text-sm text-[#F0F5F2] border border-white/15 text-center leading-normal">
+              💡 常見搭配：reschedule + 會議/約會 + for + 新時間
+            </span>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- 底部控制按鈕：針對 iPhone 16 Pro 單手拇指操作區優化 (最小高度 48px) -->
+    <div class="mt-4 sm:mt-6 grid grid-cols-4 sm:flex sm:items-center sm:justify-between gap-2 sm:gap-3">
+      <button type="button" onclick="prevCard()" aria-label="上一張閃卡" class="col-span-1 min-h-[48px] px-3 sm:px-5 py-3 rounded-2xl bg-[#faf8f5] hover:bg-white active:scale-95 text-stone-800 font-semibold shadow-sm border border-stone-300/80 transition flex items-center justify-center gap-1.5 text-sm sm:text-base">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span>上張</span>
+      </button>
+
+      <div class="col-span-2 flex items-center gap-2">
+        <button type="button" onclick="flipCard()" aria-label="翻轉閃卡正反面" class="flex-1 min-h-[48px] px-3 sm:px-5 py-3 rounded-2xl bg-stone-800 hover:bg-stone-700 active:scale-95 text-white font-semibold shadow-sm transition flex items-center justify-center gap-1.5 text-sm sm:text-base">
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i> <span>翻面</span><span class="hidden md:inline text-xs font-normal text-stone-300">(Space)</span>
+        </button>
+        <button type="button" onclick="shuffleCards()" aria-label="隨機洗牌" class="min-w-[48px] min-h-[48px] p-3 rounded-2xl bg-[#faf8f5] hover:bg-white active:scale-95 text-stone-700 shadow-sm border border-stone-300/80 transition flex items-center justify-center" title="隨機洗牌 Shuffle">
+          <i class="fa-solid fa-shuffle" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <button type="button" onclick="nextCard()" aria-label="下一張閃卡" class="col-span-1 min-h-[48px] px-3 sm:px-5 py-3 rounded-2xl bg-[#faf8f5] hover:bg-white active:scale-95 text-stone-800 font-semibold shadow-sm border border-stone-300/80 transition flex items-center justify-center gap-1.5 text-sm sm:text-base">
+        <span>下張</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </main>
+
+  <!-- 彈窗 1：新增 / 編輯單字 (具備 role="dialog" 與 aria-modal="true") -->
+  <div id="cardModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 space-y-3.5 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="modalTitle" class="text-lg font-bold text-slate-900">新增自訂單字卡</h3>
+        <button type="button" onclick="closeCardModal()" aria-label="關閉視窗" class="min-w-[40px] min-h-[40px] rounded-xl text-slate-500 hover:bg-slate-100 flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="editCardId">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label for="inputWord" class="block text-xs font-semibold text-slate-700 mb-1">英文單字 / 片語 (必填) *</label>
+          <input type="text" id="inputWord" required aria-required="true" placeholder="例如：take a rain check" class="w-full min-h-[42px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none">
+        </div>
+        <div>
+          <label for="inputPhonetic" class="block text-xs font-semibold text-slate-700 mb-1">音標 (選填)</label>
+          <input type="text" id="inputPhonetic" placeholder="例如：/teɪk ə reɪn tʃek/" class="w-full min-h-[42px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm font-mono focus:outline-none">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label for="inputMeaning" class="block text-xs font-semibold text-slate-700 mb-1">詞性與繁體中文意思 (必填) *</label>
+          <input type="text" id="inputMeaning" required aria-required="true" placeholder="例如：(phr.) 改天再約、下次吧" class="w-full min-h-[42px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none">
+        </div>
+        <div>
+          <label for="inputCategory" class="block text-xs font-semibold text-slate-700 mb-1">分類標籤</label>
+          <input type="text" id="inputCategory" placeholder="例如：我的自訂、職場、旅遊" value="我的自訂" class="w-full min-h-[42px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none">
+        </div>
+      </div>
+
+      <div>
+        <label for="inputSentenceEn" class="block text-xs font-semibold text-slate-700 mb-1">背面：英文例句 (必填，語音將朗讀此句) *</label>
+        <textarea id="inputSentenceEn" rows="2" required aria-required="true" placeholder="例如：Do you mind if I take a rain check on dinner tonight?" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none"></textarea>
+      </div>
+
+      <div>
+        <label for="inputSentenceZh" class="block text-xs font-semibold text-slate-700 mb-1">背面：繁體中文翻譯 (自動去除外層括號)</label>
+        <input type="text" id="inputSentenceZh" placeholder="例如：你介意我們今晚的晚餐改期嗎？" class="w-full min-h-[42px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none">
+      </div>
+
+      <div>
+        <label for="inputNote" class="block text-xs font-semibold text-slate-700 mb-1">補充提示 / 搭配詞 (選填)</label>
+        <input type="text" id="inputNote" placeholder="例如：take a rain check on + 活動" class="w-full min-h-[42px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none">
+      </div>
+
+      <div id="modalErrorMsg" role="alert" class="hidden text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-2.5 rounded-xl">
+        請填寫「英文單字」、「中文意思」與「英文例句」喔！
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        <button type="button" onclick="closeCardModal()" class="min-h-[44px] px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium">取消</button>
+        <button type="button" onclick="saveCardFromModal()" class="min-h-[44px] px-5 py-2 rounded-xl bg-[#b85d3d] hover:bg-[#a34e30] text-white text-sm font-semibold shadow-sm">儲存單字卡</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 2：批次快速匯入 -->
+  <div id="batchModal" role="dialog" aria-modal="true" aria-labelledby="batchModalTitle" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 id="batchModalTitle" class="text-lg font-bold text-slate-900">批次快速匯入單字</h3>
+          <p class="text-xs text-slate-600">每行一張卡，用直線符號 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-amber-800 font-mono">|</code> 分隔欄位即可一次建立多張閃卡！</p>
+        </div>
+        <button type="button" onclick="closeBatchModal()" aria-label="關閉批次匯入視窗" class="min-w-[40px] min-h-[40px] rounded-xl text-slate-500 hover:bg-slate-100 flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3 text-xs text-slate-700 space-y-1">
+        <div class="font-semibold text-amber-950">📋 格式說明（每行一筆）：</div>
+        <div class="font-mono text-slate-700">單字 | 音標 | 詞性與中文意思 | 英文例句 | 繁體中文翻譯 | 補充提示(選填)</div>
+      </div>
+
+      <label for="batchTextarea" class="sr-only">批次單字輸入區</label>
+      <textarea id="batchTextarea" rows="5" placeholder="take a rain check | /teɪk ə reɪn tʃek/ | (phr.) 改天再約 | Can I take a rain check on coffee? | 我們喝咖啡的約可以改天嗎？ | 母語超常用委婉推辭說法&#10;sleep on it | /sliːp ɑːn ɪt/ | (phr.) 考慮一晚再決定 | Let me sleep on it and tell you tomorrow. | 讓我考慮一晚明天再告訴你。 | 用於需要時間思考重要決定時" class="w-full rounded-2xl border border-slate-300 p-3 text-base sm:text-sm font-mono focus:outline-none"></textarea>
+
+      <div class="flex items-center justify-between pt-2 flex-wrap gap-3">
+        <div class="flex items-center gap-2">
+          <label for="batchCategory" class="text-xs font-semibold text-slate-700">匯入分類標籤：</label>
+          <input type="text" id="batchCategory" value="我的自訂" class="min-h-[40px] rounded-xl border border-slate-300 px-3 py-1.5 text-sm focus:outline-none">
+        </div>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" onclick="closeBatchModal()" class="min-h-[44px] px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium">取消</button>
+          <button type="button" onclick="processBatchImport()" class="min-h-[44px] px-5 py-2 rounded-xl bg-[#4d7864] hover:bg-[#3f6453] text-white text-sm font-semibold shadow-sm">立即匯入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 3：手機 App 使用與下載教學 -->
+  <div id="mobileGuideModal" role="dialog" aria-modal="true" aria-labelledby="mobileGuideTitle" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-[#4d7864] text-white flex items-center justify-center" aria-hidden="true">
+            <i class="fa-brands fa-apple text-lg"></i>
+          </div>
+          <h3 id="mobileGuideTitle" class="text-lg font-bold text-slate-900">iPhone 16 Pro 零失敗開啟教學</h3>
+        </div>
+        <button type="button" onclick="closeMobileGuideModal()" aria-label="關閉教學視窗" class="min-w-[40px] min-h-[40px] rounded-xl text-slate-500 hover:bg-slate-100 flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-sm text-slate-700">
+        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+          <div class="font-bold text-emerald-950 flex flex-wrap items-center gap-1.5">
+            <span class="px-2 py-0.5 text-xs rounded-md bg-emerald-700 text-white">方法 A（最推薦）</span>
+            <span>使用電腦右上角「共用連結」傳到手機</span>
+          </div>
+          <ol class="text-xs text-emerald-950 leading-relaxed list-decimal list-inside space-y-1.5">
+            <li>點擊電腦螢幕最右上角的<strong>「共用圖示 <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>」</strong>建立公開連結。</li>
+            <li>把網址傳到 LINE Keep，在 iPhone 16 Pro 上以 <strong>Safari</strong> 開啟並點選底部分享鈕<strong>「加入主畫面」</strong>！</li>
+          </ol>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 space-y-2.5">
+          <div class="font-bold text-amber-950 flex flex-wrap items-center gap-1.5">
+            <span class="px-2 py-0.5 text-xs rounded-md bg-[#b85d3d] text-white">方法 B（直接下載檔案）</span>
+            <span>搭配 iPhone「Chrome」App 開啟</span>
+          </div>
+          <p class="text-xs text-amber-950 leading-relaxed">
+            點擊下方按鈕下載 <code>.html</code> 閃卡檔存到 iPhone「檔案」App。長按該檔案 ➔ 選擇<strong>「分享」</strong> ➔ 用 <strong>「Chrome」App</strong> 開啟即可！
+          </p>
+          <button type="button" onclick="downloadStandaloneApp()" class="w-full min-h-[44px] py-2.5 rounded-xl bg-[#b85d3d] hover:bg-[#a34e30] text-white font-semibold text-xs shadow-sm transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-download" aria-hidden="true"></i> 點此下載最新護眼閃卡檔 (.html)
+          </button>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-100">
+        <button type="button" onclick="closeMobileGuideModal()" class="min-h-[44px] px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold">我知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 側邊抽屜：單字庫清單與備份管理 -->
+  <div id="manageDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex justify-end">
+    <div class="bg-white w-full max-w-xl h-full shadow-2xl flex flex-col justify-between">
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 id="drawerTitle" class="font-bold text-lg text-slate-900">單字庫管理</h3>
+          <p class="text-xs text-slate-600">所有變更會自動儲存在您的裝置中</p>
+        </div>
+        <button type="button" onclick="toggleManageDrawer()" aria-label="關閉單字庫管理" class="min-w-[40px] min-h-[40px] rounded-xl text-slate-500 hover:bg-slate-100 flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <!-- 搜尋與備份工具列 -->
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+        <label for="searchInput" class="sr-only">搜尋單字或中文意思</label>
+        <input type="search" id="searchInput" oninput="renderManageList()" placeholder="搜尋單字或中文意思..." class="flex-1 min-w-[160px] min-h-[40px] rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-base sm:text-sm focus:outline-none">
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="exportDeckJson()" class="min-h-[40px] px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-xs font-medium text-slate-800">
+            <i class="fa-solid fa-download mr-1" aria-hidden="true"></i>匯出備份
+          </button>
+          <label class="min-h-[40px] px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-xs font-medium text-slate-800 cursor-pointer flex items-center">
+            <i class="fa-solid fa-upload mr-1" aria-hidden="true"></i>還原備份
+            <input type="file" accept=".json" onchange="importDeckJson(event)" class="hidden">
+          </label>
+          <button type="button" onclick="resetToDefaultDeck()" class="min-h-[40px] px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-xs font-medium text-rose-700">
+            重置預設
+          </button>
+        </div>
+      </div>
+
+      <!-- 單字列表 -->
+      <div id="manageListContainer" role="list" class="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-2.5"></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'anita_custom_flashcards_v2';
+
+    const defaultCards = [
+      { id: 'c1', category: '行程與日常', word: 'reschedule', phonetic: '/ˌriːˈskedʒ.uːl/', meaning: '(v.) 重新安排時間、改期', sentenceEn: 'Something came up. Can we reschedule our meeting for tomorrow?', sentenceZh: '臨時有點事。我們可以把會議改到明天嗎？', note: '常見搭配：reschedule + 活動 + for + 新時間' },
+      { id: 'c2', category: '行程與日常', word: 'commute', phonetic: '/kəˈmjuːt/', meaning: '(v./n.) 通勤、上下班路程', sentenceEn: 'My morning commute takes about twenty minutes on foot.', sentenceZh: '我早上的通勤走路大約需要二十分鐘。', note: '常見搭配：morning commute (早上的通勤)' },
+      { id: 'c3', category: '行程與日常', word: 'errand', phonetic: '/ˈer.ənd/', meaning: '(n.) 跑腿、日常差事', sentenceEn: 'I need to run a few errands after work.', sentenceZh: '我下班後得去辦點日常雜事。', note: '必背動詞搭配：run errands (辦日常雜事)' },
+      { id: 'c4', category: '行程與日常', word: 'available', phonetic: '/əˈveɪ.lə.bəl/', meaning: '(adj.) 有空的、可使用的', sentenceEn: 'Are you available for a quick chat this afternoon?', sentenceZh: '你今天下午有空稍微聊一下嗎？', note: '母語人士詢問他人是否有空最禮貌自然的用字' },
+      { id: 'c5', category: '行程與日常', word: 'flexible', phonetic: '/ˈflek.sə.bəl/', meaning: '(adj.) 彈性的、靈活的', sentenceEn: 'My schedule is pretty flexible this week.', sentenceZh: '我這週的行程相當有彈性。', note: '常見搭配：flexible schedule (彈性行程)' },
+      { id: 'c6', category: '飲食與生活', word: 'savory', phonetic: '/ˈseɪ.vər.i/', meaning: '(adj.) 鹹味的、開胃的', sentenceEn: 'I always prefer a savory breakfast over a sweet one.', sentenceZh: '比起甜食，我總是偏愛鹹的早餐。', note: '形容非甜食的鹹香餐點（如黑胡椒煎蛋、炒青菜）' },
+      { id: 'c7', category: '飲食與生活', word: 'crave', phonetic: '/kreɪv/', meaning: '(v.) 渴望、突然很想吃', sentenceEn: 'I am really craving some french fries right now.', sentenceZh: '我現在超級想吃薯條。', note: '口語常說 I am craving + 食物' },
+      { id: 'c8', category: '飲食與生活', word: 'refreshing', phonetic: '/rɪˈfreʃ.ɪŋ/', meaning: '(adj.) 清爽的、提神的', sentenceEn: 'A cold drink is so refreshing on a hot afternoon.', sentenceZh: '在炎熱的午後來杯冷飲真是清爽提神。', note: '也可形容散步或休息後讓人精神一振的感覺' },
+      { id: 'c9', category: '飲食與生活', word: 'appetite', phonetic: '/ˈæp.ə.taɪt/', meaning: '(n.) 食慾、胃口', sentenceEn: 'Going for a walk always gives me a good appetite.', sentenceZh: '去散個步總是能讓我有個好胃口。', note: '常見搭配：have a good appetite (胃口很好)' },
+      { id: 'c10', category: '飲食與生活', word: 'leftovers', phonetic: '/ˈleftˌoʊ.vɚz/', meaning: '(n.) 剩菜、吃剩的食物', sentenceEn: 'We are just having leftovers for dinner tonight.', sentenceZh: '我們今晚只吃剩菜當晚餐。', note: '恆用複數形 leftovers' },
+      { id: 'c11', category: '居家與習慣', word: 'routine', phonetic: '/ruːˈtiːn/', meaning: '(n.) 日常慣例、作息', sentenceEn: 'Stretching for ten minutes is part of my daily routine.', sentenceZh: '伸展十分鐘是我日常作息的一部分。', note: '常見搭配：daily routine / morning routine' },
+      { id: 'c12', category: '居家與習慣', word: 'spotless', phonetic: '/ˈspɑːt.ləs/', meaning: '(adj.) 一塵不染的、非常乾淨的', sentenceEn: 'After vacuuming and mopping, the living room floor is spotless.', sentenceZh: '吸完地又拖完地後，客廳的地板一塵不染。', note: '比 very clean 更道地生動的形容詞' },
+      { id: 'c13', category: '居家與習慣', word: 'cozy', phonetic: '/ˈkoʊ.zi/', meaning: '(adj.) 溫馨舒適的', sentenceEn: 'The cats love sleeping on that cozy blanket.', sentenceZh: '貓咪們超愛睡在那條舒適的毯子上。', note: '形容居家空間溫暖舒適最常用的字' },
+      { id: 'c14', category: '居家與習慣', word: 'unwind', phonetic: '/ʌnˈwaɪnd/', meaning: '(v.) 放鬆、紓解壓力', sentenceEn: 'Listening to music helps me unwind after a busy day.', sentenceZh: '聽音樂幫助我在忙碌的一天後放鬆心情。', note: '母語人士下班後「放鬆充電」最愛用的動詞' },
+      { id: 'c15', category: '居家與習慣', word: 'stock up', phonetic: '/stɑːk ʌp/', meaning: '(phr. v.) 囤貨、採買儲備', sentenceEn: 'We need to stock up on household supplies this weekend.', sentenceZh: '我們這週末需要採買補齊一些居家用品。', note: '常見搭配：stock up on + 日用品/食物' },
+      { id: 'c16', category: '職場與財務', word: 'confirm', phonetic: '/kənˈfɝːm/', meaning: '(v.) 確認、證實', sentenceEn: 'Just calling to confirm your appointment for tomorrow morning.', sentenceZh: '打給您主要是為了確認您明早的預約。', note: '商務書信與電話確認必備動詞' },
+      { id: 'c17', category: '職場與財務', word: 'budget', phonetic: '/ˈbʌdʒ.ɪt/', meaning: '(n./v.) 預算、編列預算', sentenceEn: 'We managed to keep the project under budget.', sentenceZh: '我們成功將這個專案控制在預算之內。', note: '常見搭配：under budget (低於預算) / on a budget' },
+      { id: 'c18', category: '職場與財務', word: 'accurate', phonetic: '/ˈæk.jɚ.ət/', meaning: '(adj.) 準確的、精確的', sentenceEn: 'Please double-check the numbers to make sure they are accurate.', sentenceZh: '請再次核對這些數字，確保它們準確無誤。', note: '行政與財務核對報表時的高頻字' },
+      { id: 'c19', category: '職場與財務', word: 'efficient', phonetic: '/ɪˈfɪʃ.ənt/', meaning: '(adj.) 有效率的', sentenceEn: 'This new software makes our daily paperwork much more efficient.', sentenceZh: '這套新軟體讓我們的日常文書工作變得更有效率。', note: '強調省時省力的高效率' },
+      { id: 'c20', category: '職場與財務', word: 'keep track of', phonetic: '/kiːp træk ʌv/', meaning: '(phr.) 追蹤、記錄、掌握', sentenceEn: 'I use a spreadsheet to keep track of all our monthly expenses.', sentenceZh: '我用試算表來記錄我們每個月的所有開支。', note: '記帳、管理進度極好用的片語' },
+      { id: 'c21', category: '人際與心情', word: 'appreciate', phonetic: '/əˈpriː.ʃi.eɪt/', meaning: '(v.) 感激、欣賞', sentenceEn: 'I really appreciate your help with this report.', sentenceZh: '我真的很感激你在這份報告上的幫忙。', note: '表達感謝比 thank you 更有溫度與禮貌' },
+      { id: 'c22', category: '人際與心情', word: 'catch up', phonetic: '/kætʃ ʌp/', meaning: '(phr. v.) 敘舊、更新近況', sentenceEn: "Let's grab a coffee soon and catch up!", sentenceZh: '我們找時間喝杯咖啡敘敘舊吧！', note: '與朋友或家人聊近況最道地的說法' },
+      { id: 'c23', category: '人際與心情', word: 'exhausted', phonetic: '/ɪɡˈzɑː.stɪd/', meaning: '(adj.) 筋疲力盡的、累壞的', sentenceEn: 'I was completely exhausted after cleaning the whole house.', sentenceZh: '打掃完一整間房子後，我徹底累壞了。', note: '比 very tired 更傳神' },
+      { id: 'c24', category: '人際與心情', word: 'worthwhile', phonetic: '/ˌwɝːθˈwaɪl/', meaning: '(adj.) 值得花時間（或金錢）的', sentenceEn: 'Practicing a little bit every day makes the effort worthwhile.', sentenceZh: '每天練習一點點，會讓這份努力變得非常值得。', note: '形容努力或投資很有價值' },
+      { id: 'c25', category: '人際與心情', word: 'upbeat', phonetic: '/ˈʌp.biːt/', meaning: '(adj.) 樂觀的、充滿活力的、輕快的', sentenceEn: 'She always stays upbeat even when work gets busy.', sentenceZh: '即使工作變忙，她總是保持樂觀有活力。', note: '可形容人充滿朝氣，也可形容音樂節奏輕快' }
+    ];
+
+    let allCards = [];
+    let currentCategory = '全部';
+    let currentIndex = 0;
+    let isFlipped = false;
+    let voices = [];
+
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      document.getElementById('toastText').textContent = msg;
+      box.classList.remove('hidden');
+      setTimeout(() => box.classList.add('hidden'), 2600);
+    }
+
+    function stripOuterBrackets(str) {
+      if (!str) return '';
+      return str.trim().replace(/^[\(（\[]+|[\)）\]]+$/g, '').trim();
+    }
+
+    function loadCards() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          allCards = JSON.parse(saved);
+        } catch (e) {
+          allCards = [...defaultCards];
+        }
+      } else {
+        allCards = [...defaultCards];
+      }
+      if (!allCards.length) allCards = [...defaultCards];
+    }
+
+    function saveCardsToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(allCards));
+      updateTotalBadge();
+    }
+
+    function updateTotalBadge() {
+      document.getElementById('totalCountBadge').textContent = allCards.length;
+    }
+
+    function getFilteredCards() {
+      if (currentCategory === '全部') return allCards;
+      return allCards.filter(c => (c.category || '未分類') === currentCategory);
+    }
+
+    function renderCategoryTabs() {
+      const categories = ['全部', ...new Set(allCards.map(c => c.category || '未分類'))];
+      const container = document.getElementById('categoryTabs');
+      container.innerHTML = categories.map(cat => {
+        const active = cat === currentCategory;
+        return `<button type="button" role="tab" aria-selected="${active}" onclick="selectCategory('${cat.replace(/'/g, "\\'")}')" class="min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+          active ? 'bg-stone-800 text-white shadow-xs' : 'bg-[#faf8f5] text-stone-700 hover:bg-stone-200/70 border border-stone-300/80'
+        }">${cat}</button>`;
+      }).join('');
+    }
+
+    function selectCategory(cat) {
+      currentCategory = cat;
+      currentIndex = 0;
+      setFlipState(false);
+      renderCategoryTabs();
+      renderCurrentCard();
+    }
+
+    function setFlipState(flipped) {
+      isFlipped = flipped;
+      document.getElementById('flashcardInner').classList.toggle('card-flipped', isFlipped);
+      document.getElementById('cardFrontSection').setAttribute('aria-hidden', isFlipped ? 'true' : 'false');
+      document.getElementById('cardBackSection').setAttribute('aria-hidden', isFlipped ? 'false' : 'true');
+      announceCardForScreenReader();
+    }
+
+    function announceCardForScreenReader() {
+      const card = getFilteredCards()[currentIndex];
+      if (!card) return;
+      const srBox = document.getElementById('srCardAnnouncement');
+      if (!isFlipped) {
+        srBox.textContent = `正面：單字 ${card.word}，意思：${card.meaning}`;
+      } else {
+        srBox.textContent = `背面：例句 ${card.sentenceEn}，翻譯：${stripOuterBrackets(card.sentenceZh)}`;
+      }
+    }
+
+    function renderCurrentCard() {
+      const filtered = getFilteredCards();
+      if (filtered.length === 0) {
+        currentCategory = '全部';
+        renderCategoryTabs();
+        return renderCurrentCard();
+      }
+      if (currentIndex >= filtered.length) currentIndex = 0;
+      if (currentIndex < 0) currentIndex = filtered.length - 1;
+
+      const card = filtered[currentIndex];
+      document.getElementById('currentIndexText').textContent = currentIndex + 1;
+      document.getElementById('filteredTotalText').textContent = filtered.length;
+
+      document.getElementById('cardCategoryFront').textContent = card.category || '未分類';
+      document.getElementById('cardWord').textContent = card.word;
+      document.getElementById('cardPhonetic').textContent = card.phonetic || '';
+      document.getElementById('cardMeaning').textContent = card.meaning;
+
+      document.getElementById('cardSentenceEn').textContent = card.sentenceEn;
+      document.getElementById('cardSentenceZh').textContent = stripOuterBrackets(card.sentenceZh);
+
+      const noteBox = document.getElementById('cardNoteBox');
+      if (card.note && card.note.trim() !== '') {
+        noteBox.classList.remove('hidden');
+        document.getElementById('cardNote').textContent = '💡 ' + card.note;
+      } else {
+        noteBox.classList.add('hidden');
+      }
+
+      announceCardForScreenReader();
+    }
+
+    function flipCard() {
+      setFlipState(!isFlipped);
+    }
+
+    function handleCardKeydown(e) {
+      if (e.target !== document.getElementById('flashcardContainer')) return;
+      if (e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        flipCard();
+      }
+    }
+
+    function nextCard() {
+      const filtered = getFilteredCards();
+      currentIndex = (currentIndex + 1) % filtered.length;
+      setFlipState(false);
+      setTimeout(renderCurrentCard, 120);
+    }
+
+    function prevCard() {
+      const filtered = getFilteredCards();
+      currentIndex = (currentIndex - 1 + filtered.length) % filtered.length;
+      setFlipState(false);
+      setTimeout(renderCurrentCard, 120);
+    }
+
+    function shuffleCards() {
+      for (let i = allCards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
+      }
+      currentIndex = 0;
+      setFlipState(false);
+      renderCurrentCard();
+      showToast('已隨機洗牌！');
+    }
+
+    // iPhone 16 Pro 觸控左右滑動換張手勢支援
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const cardContainerEl = document.getElementById('flashcardContainer');
+
+    cardContainerEl.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    cardContainerEl.addEventListener('touchend', (e) => {
+      const diffX = e.changedTouches[0].screenX - touchStartX;
+      const diffY = e.changedTouches[0].screenY - touchStartY;
+      if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+        if (diffX < 0) {
+          nextCard();
+        } else {
+          prevCard();
+        }
+      }
+    }, { passive: true });
+
+    function loadVoices() {
+      const allVoices = window.speechSynthesis.getVoices();
+      voices = allVoices.filter(v => v.lang.startsWith('en'));
+      const select = document.getElementById('voiceSelect');
+      if (!voices.length) return;
+
+      const femaleKeywords = [
+        'Samantha', 'Ava', 'Allison', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Serena',
+        'Aria', 'Jenny', 'Michelle', 'Clara', 'Sonia', 'Libby',
+        'Google US English', 'Google UK English Female', 'Zira', 'Female'
+      ];
+      const maleKeywords = ['Daniel', 'Alex', 'Guy', 'Andrew', 'Christopher', 'Brian', 'David', 'Aaron', 'Male', 'Fred', 'Tom'];
+
+      voices.sort((a, b) => {
+        const femA = femaleKeywords.findIndex(k => a.name.includes(k));
+        const femB = femaleKeywords.findIndex(k => b.name.includes(k));
+        const isMaleA = maleKeywords.some(k => a.name.includes(k));
+        const isMaleB = maleKeywords.some(k => b.name.includes(k));
+
+        if (femA !== -1 && femB === -1) return -1;
+        if (femB !== -1 && femA === -1) return 1;
+        if (femA !== -1 && femB !== -1) return femA - femB;
+        if (!isMaleA && isMaleB) return -1;
+        if (isMaleA && !isMaleB) return 1;
+        return 0;
+      });
+
+      select.innerHTML = voices.map((v, idx) => `<option value="${idx}">${v.name} (${v.lang})</option>`).join('');
+    }
+
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    function speakEnglishOnly(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+
+      const cleanEnglish = text.replace(/[\u4e00-\u9fa5（）()【】]/g, '').trim();
+      const utterance = new SpeechSynthesisUtterance(cleanEnglish);
+      utterance.lang = 'en-US';
+
+      const selectIdx = document.getElementById('voiceSelect').value;
+      if (voices[selectIdx]) {
+        utterance.voice = voices[selectIdx];
+      }
+
+      const isCalm = document.getElementById('calmToggle').checked;
+      const baseRate = parseFloat(document.getElementById('rateSlider').value) || 1.0;
+
+      utterance.rate = baseRate;
+      utterance.pitch = isCalm ? 0.94 : 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakFront(e) {
+      if (e) e.stopPropagation();
+      const card = getFilteredCards()[currentIndex];
+      if (card) speakEnglishOnly(card.word);
+    }
+
+    function speakBack(e) {
+      if (e) e.stopPropagation();
+      const card = getFilteredCards()[currentIndex];
+      if (card) speakEnglishOnly(card.sentenceEn);
+    }
+
+    function toggleVoiceSettings() {
+      const panel = document.getElementById('voicePanel');
+      const isHidden = panel.classList.toggle('hidden');
+      const expanded = !isHidden ? 'true' : 'false';
+      const btnM = document.getElementById('voiceSettingsBtnMobile');
+      const btnD = document.getElementById('voiceSettingsBtnDesktop');
+      if (btnM) btnM.setAttribute('aria-expanded', expanded);
+      if (btnD) btnD.setAttribute('aria-expanded', expanded);
+    }
+
+    document.getElementById('rateSlider').addEventListener('input', (e) => {
+      document.getElementById('rateValue').textContent = e.target.value + 'x';
+      e.target.setAttribute('aria-valuenow', e.target.value);
+    });
+
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = '新增自訂單字卡';
+      document.getElementById('editCardId').value = '';
+      document.getElementById('inputWord').value = '';
+      document.getElementById('inputPhonetic').value = '';
+      document.getElementById('inputMeaning').value = '';
+      document.getElementById('inputCategory').value = currentCategory === '全部' ? '我的自訂' : currentCategory;
+      document.getElementById('inputSentenceEn').value = '';
+      document.getElementById('inputSentenceZh').value = '';
+      document.getElementById('inputNote').value = '';
+      document.getElementById('modalErrorMsg').classList.add('hidden');
+      document.getElementById('cardModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('inputWord').focus(), 50);
+    }
+
+    function editCurrentCard(e) {
+      if (e) e.stopPropagation();
+      const card = getFilteredCards()[currentIndex];
+      if (!card) return;
+      openEditModalById(card.id);
+    }
+
+    function openEditModalById(id) {
+      const card = allCards.find(c => c.id === id);
+      if (!card) return;
+      document.getElementById('modalTitle').textContent = '編輯單字卡';
+      document.getElementById('editCardId').value = card.id;
+      document.getElementById('inputWord').value = card.word;
+      document.getElementById('inputPhonetic').value = card.phonetic || '';
+      document.getElementById('inputMeaning').value = card.meaning;
+      document.getElementById('inputCategory').value = card.category || '我的自訂';
+      document.getElementById('inputSentenceEn').value = card.sentenceEn;
+      document.getElementById('inputSentenceZh').value = stripOuterBrackets(card.sentenceZh);
+      document.getElementById('inputNote').value = card.note || '';
+      document.getElementById('modalErrorMsg').classList.add('hidden');
+      document.getElementById('cardModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('inputWord').focus(), 50);
+    }
+
+    function closeCardModal() {
+      document.getElementById('cardModal').classList.add('hidden');
+    }
+
+    function saveCardFromModal() {
+      const id = document.getElementById('editCardId').value;
+      const word = document.getElementById('inputWord').value.trim();
+      const phonetic = document.getElementById('inputPhonetic').value.trim();
+      const meaning = document.getElementById('inputMeaning').value.trim();
+      const category = document.getElementById('inputCategory').value.trim() || '我的自訂';
+      const sentenceEn = document.getElementById('inputSentenceEn').value.trim();
+      const sentenceZh = stripOuterBrackets(document.getElementById('inputSentenceZh').value);
+      const note = document.getElementById('inputNote').value.trim();
+
+      if (!word || !meaning || !sentenceEn) {
+        document.getElementById('modalErrorMsg').classList.remove('hidden');
+        return;
+      }
+
+      if (id) {
+        const idx = allCards.findIndex(c => c.id === id);
+        if (idx !== -1) {
+          allCards[idx] = { id, category, word, phonetic, meaning, sentenceEn, sentenceZh, note };
+        }
+        showToast('單字卡已更新！');
+      } else {
+        const newCard = {
+          id: 'custom_' + Date.now(),
+          category,
+          word,
+          phonetic: phonetic || '/ - /',
+          meaning,
+          sentenceEn,
+          sentenceZh,
+          note
+        };
+        allCards.unshift(newCard);
+        currentCategory = category;
+        currentIndex = 0;
+        showToast('成功新增單字卡！');
+      }
+
+      saveCardsToStorage();
+      renderCategoryTabs();
+      renderCurrentCard();
+      renderManageList();
+      closeCardModal();
+    }
+
+    function openBatchModal() {
+      document.getElementById('batchModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('batchTextarea').focus(), 50);
+    }
+
+    function closeBatchModal() {
+      document.getElementById('batchModal').classList.add('hidden');
+    }
+
+    function openMobileGuideModal() {
+      document.getElementById('mobileGuideModal').classList.remove('hidden');
+    }
+
+    function closeMobileGuideModal() {
+      document.getElementById('mobileGuideModal').classList.add('hidden');
+    }
+
+    function downloadStandaloneApp() {
+      let htmlSource = document.documentElement.outerHTML;
+      const currentDeckJson = JSON.stringify(allCards, null, 2);
+      htmlSource = htmlSource.replace(
+        /const defaultCards = \[[\s\S]*?\];/,
+        'const defaultCards = ' + currentDeckJson + ';'
+      );
+      const blob = new Blob(['<!DOCTYPE html>\n' + htmlSource], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'daily_english_flashcards_a11y.html';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('已下載包含目前所有單字的閃卡檔！');
+    }
+
+    function processBatchImport() {
+      const raw = document.getElementById('batchTextarea').value.trim();
+      const category = document.getElementById('batchCategory').value.trim() || '我的自訂';
+      if (!raw) return;
+
+      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+      let addedCount = 0;
+
+      lines.reverse().forEach((line, idx) => {
+        const parts = line.split('|').map(p => p.trim());
+        if (parts.length >= 4) {
+          allCards.unshift({
+            id: 'batch_' + Date.now() + '_' + idx,
+            category,
+            word: parts[0],
+            phonetic: parts[1] || '/ - /',
+            meaning: parts[2],
+            sentenceEn: parts[3],
+            sentenceZh: stripOuterBrackets(parts[4] || ''),
+            note: parts[5] || ''
+          });
+          addedCount++;
+        }
+      });
+
+      if (addedCount > 0) {
+        saveCardsToStorage();
+        currentCategory = category;
+        currentIndex = 0;
+        renderCategoryTabs();
+        renderCurrentCard();
+        document.getElementById('batchTextarea').value = '';
+        closeBatchModal();
+        showToast(`成功匯入 ${addedCount} 張單字閃卡！`);
+      } else {
+        showToast('請確認格式：單字 | 音標 | 中文意思 | 英文例句');
+      }
+    }
+
+    function toggleManageDrawer() {
+      const drawer = document.getElementById('manageDrawer');
+      drawer.classList.toggle('hidden');
+      if (!drawer.classList.contains('hidden')) {
+        renderManageList();
+        setTimeout(() => document.getElementById('searchInput').focus(), 50);
+      }
+    }
+
+    function renderManageList() {
+      const q = (document.getElementById('searchInput').value || '').toLowerCase();
+      const container = document.getElementById('manageListContainer');
+      const matched = allCards.filter(c =>
+        c.word.toLowerCase().includes(q) ||
+        c.meaning.toLowerCase().includes(q) ||
+        (c.category || '').toLowerCase().includes(q)
+      );
+
+      container.innerHTML = matched.map(c => `
+        <div role="listitem" class="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-amber-400 transition flex items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span lang="en" class="font-bold text-slate-900">${c.word}</span>
+              <span class="text-xs font-mono text-[#8A4630]">${c.phonetic || ''}</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px]">${c.category || '未分類'}</span>
+            </div>
+            <div class="text-xs text-slate-700 truncate mt-0.5">${c.meaning}</div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button type="button" onclick="openEditModalById('${c.id}')" aria-label="編輯 ${c.word}" class="min-w-[38px] min-h-[38px] p-2 text-slate-500 hover:text-indigo-600 rounded-lg">
+              <i class="fa-solid fa-pen" aria-hidden="true"></i>
+            </button>
+            <button type="button" onclick="deleteCardById('${c.id}')" aria-label="刪除 ${c.word}" class="min-w-[38px] min-h-[38px] p-2 text-slate-500 hover:text-rose-600 rounded-lg">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function deleteCardById(id) {
+      if (allCards.length <= 1) {
+        showToast('單字庫至少需要保留一張卡片喔！');
+        return;
+      }
+      allCards = allCards.filter(c => c.id !== id);
+      saveCardsToStorage();
+      renderCategoryTabs();
+      renderCurrentCard();
+      renderManageList();
+      showToast('已刪除該張單字卡');
+    }
+
+    function exportDeckJson() {
+      const blob = new Blob([JSON.stringify(allCards, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'my_english_flashcards.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importDeckJson(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const imported = JSON.parse(ev.target.result);
+          if (Array.isArray(imported) && imported.length > 0) {
+            allCards = imported;
+            saveCardsToStorage();
+            currentCategory = '全部';
+            currentIndex = 0;
+            renderCategoryTabs();
+            renderCurrentCard();
+            renderManageList();
+            showToast(`成功還原 ${imported.length} 張單字卡！`);
+          }
+        } catch (err) {
+          showToast('讀取備份檔案失敗，請確認檔案格式正確。');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetToDefaultDeck() {
+      allCards = [...defaultCards];
+      saveCardsToStorage();
+      currentCategory = '全部';
+      currentIndex = 0;
+      renderCategoryTabs();
+      renderCurrentCard();
+      renderManageList();
+      showToast('已恢復為預設的 25 張單字卡！');
+    }
+
+    // 全域鍵盤導覽 (支援 Escape 關閉彈窗、空白鍵翻面與左右鍵換張)
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape') {
+        closeCardModal();
+        closeBatchModal();
+        closeMobileGuideModal();
+        document.getElementById('manageDrawer').classList.add('hidden');
+        return;
+      }
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+      if (e.code === 'Space' && document.activeElement !== document.getElementById('flashcardContainer')) {
+        e.preventDefault();
+        flipCard();
+      } else if (e.code === 'ArrowRight') {
+        nextCard();
+      } else if (e.code === 'ArrowLeft') {
+        prevCard();
+      }
+    });
+
+    loadCards();
+    updateTotalBadge();
+    renderCategoryTabs();
+    renderCurrentCard();
+    loadVoices();
+  </script>
+</body>
+</html>
