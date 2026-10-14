@@ -1,43 +1,134 @@
 # vocab-card
 
-從 Gemini Canvas 還原的英文學習閃卡，支援分類、翻面、英文朗讀、新增與編輯卡片、批次匯入及 JSON 備份。
+個人使用的英文單字卡網頁。透過分類、翻面與英文朗讀練習單字，也能建立自己的詞庫，登入 Google 後在手機與電腦之間同步。
 
-## 執行
+**[開啟單字卡](https://chienikao.github.io/vocab-card/)** · [GitHub repository](https://github.com/ChienIKao/vocab-card)
 
-執行 `node scripts/serve.mjs`，開啟 `http://localhost:4173/vocab-card/`。樣式、圖示、字型與 Firebase SDK 使用外部 CDN，需要網路連線。
+`vocab-card` 是目前的專案名稱；網頁顯示名稱暫為「日常英文學習閃卡」。
 
-## GitHub Pages
+## 功能
 
-[線上版本](https://chienikao.github.io/vocab-card/) · [GitHub repository](https://github.com/ChienIKao/vocab-card)
+- 內建 25 張日常英文單字卡，依行程、飲食、居家、職場與人際主題分類。
+- 正面顯示單字、音標與中文意思，背面顯示英文例句、翻譯與補充提示。
+- 支援英文朗讀、翻面、切換卡片與隨機洗牌；電腦可用空白鍵翻面，手機可左右滑動切換卡片。
+- 新增、編輯、刪除、搜尋與批次匯入單字卡。
+- Google OIDC 登入與 Firestore 雲端同步。
+- 匯出／還原 JSON 備份，以及下載包含目前詞庫的獨立 HTML 閃卡檔。
 
-GitHub Pages 的發布來源為 **main / (root)**，推送至 `main` 後會自動部署。
+## 開始使用
 
-## 資料儲存
+1. 開啟[線上版本](https://chienikao.github.io/vocab-card/)，點選「使用 Google 帳戶登入」。目前的雲端詞庫只開放擁有者帳號存取。
+2. 等待頁面上方顯示「雲端詞庫已同步」，即可開始使用或修改卡片。
+3. 在另一台裝置開啟相同網址，登入同一個 Google 帳號，即可讀取同一份詞庫。
 
-已啟用 Google OIDC 登入與 Firestore 同步，Firebase 專案為 `vocab-card-c4149`，使用免付費 Spark 方案，未連結帳單帳戶。資料庫使用台灣 `asia-east1` 地區的 Standard 版。
+未登入時，卡片保存在目前瀏覽器的本機詞庫。登入後會切換至帳號的雲端詞庫；登出後回到本機詞庫。
 
-登入後每張卡片獨立保存在 `users/{uid}/cards/{cardId}`，排序保存在 `users/{uid}`。每次只上傳變更的卡片；同一張卡片的同時編輯以最後成功寫入的版本為準。尚未成功同步的變更保存在該帳號的本機待同步清單中。
+### 匯入與備份
 
-本機詞庫和各登入帳號的快取分開保存。新帳號第一次建立雲端詞庫時會帶入目前的本機卡片；已存在的雲端詞庫會直接載入。
+點選「匯入」可一次建立多張卡片，每行一筆，以 `|` 分隔欄位：
 
-Gemini 上的自訂卡片可使用「詞庫 → 匯出備份」匯出，再於本 app 使用「還原備份」匯入。
+```text
+單字 | 音標 | 詞性與中文意思 | 英文例句 | 繁體中文翻譯 | 補充提示
+commute | /kəˈmjuːt/ | (v.) 通勤 | I commute by train. | 我搭火車通勤。 | commute to work
+```
 
-## Firebase 設定
+單字、中文意思與英文例句為必填；其他欄位可留空，保留分隔符號即可。匯入視窗可為這批卡片指定分類。
 
-1. 建立 Firebase 專案與 Web app，將公開的 Firebase Web 設定物件填入 `firebase-config.js` 的 `firebaseConfig`，以及 Google 登入供應商的公開 Web 用戶端 ID 填入 `googleClientId`。app 透過 Google Identity Services 取得 Google OIDC ID token，再由 Firebase Authentication 驗證；OAuth client secret 保存在服務端。
-2. 在 Authentication 啟用 Google 登入，將 `chienikao.github.io` 和 `localhost` 加入授權網域。在 Google Cloud OAuth Web 用戶端的授權 JavaScript 來源加入 `https://chienikao.github.io` 和 `http://localhost:4173`。
-3. 建立 Cloud Firestore，先使用正式環境的封閉規則。
-4. 在 app 用 Google 登入一次，在 Firebase Authentication 的使用者列表取得自己的 UID。`firestore.rules` 的 `isOwner` 已填入目前擁有者的 UID；若改用另一個 Firebase 專案，請替換成新的 UID，再於 Firestore 控制台發布規則。也可使用 Firebase CLI 執行 `firebase deploy --only firestore:rules --project YOUR_PROJECT_ID`。
-5. 推送專案設定與程式至 `main`，重新整理 app，即可啟用跨裝置同步。
+在「詞庫」中使用「匯出備份」下載 JSON，再透過「還原備份」取代目前詞庫。若 Gemini 原版中有自訂卡片，也可用這個方式搬移。登入狀態下還原的詞庫會同步至雲端。
 
-`firestore.rules` 只允許指定 UID 存取自己的詞庫。Firebase Web 設定是前端公開設定；資料權限由 Firebase Authentication 與 Firestore 規則控制。
+「下載閃卡檔」會產生包含目前詞庫的獨立 HTML 檔，使用本機儲存。需要跨裝置同步時，請使用線上版本。
 
-下載的獨立 HTML 閃卡檔使用本機儲存，線上網址版本提供雲端同步。
+## 儲存與同步
 
-## 驗證
+網頁由 GitHub Pages 提供，Google Identity Services 取得 Google OIDC ID token，Firebase Authentication 驗證登入身分，Cloud Firestore 儲存詞庫。
 
-`node --test tests/sync-model.test.mjs`
+| 資料 | Firestore 路徑 |
+| --- | --- |
+| 卡片排序 | `users/{uid}` 的 `order` 欄位 |
+| 每張卡片 | `users/{uid}/cards/{cardId}` |
 
-## 原始來源
+每次只上傳變更的卡片。不同卡片的更新會合併；若兩台裝置同時修改同一張卡片，以最後成功寫入的版本為準。尚未成功同步的變更會保存在該帳號的本機待同步清單，連線恢復後再送出。
 
-[Gemini 公開分享](https://gemini.google.com/share/5d18371c23d0)。
+本機詞庫與各帳號的快取分開保存。帳號首次建立雲端詞庫時，會帶入當前頁面的卡片；之後登入會直接載入已有的雲端詞庫。
+
+`firestore.rules` 以 Firebase 使用者 UID 限制存取，只有指定擁有者能讀寫自己的詞庫。前端使用公開的 Firebase Web 設定與 OAuth client ID，資料權限由登入身分與 Firestore 規則控制。
+
+### 目前 Firebase 專案
+
+| 項目 | 設定 |
+| --- | --- |
+| Project ID | `vocab-card-c4149` |
+| 方案 | 免費 Spark，未連結帳單帳戶 |
+| 登入方式 | Google |
+| 資料庫 | Cloud Firestore Standard |
+| 資料庫地區 | `asia-east1`（台灣） |
+
+Spark 提供免費使用額度；超過額度時服務會受限，不會自動轉為付費方案。詳見 [Firebase 方案說明](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)。
+
+## 本機開發
+
+需安裝 Node.js。在專案目錄執行：
+
+```sh
+node scripts/serve.mjs
+```
+
+開啟 `http://localhost:4173/vocab-card/`。前端直接使用 HTML、JavaScript 與 ES modules，不需要安裝 npm 套件或執行建置。
+
+樣式、圖示、字型、Google 登入服務與 Firebase SDK 透過外部 CDN 載入，開啟網頁時需要網路連線。英文朗讀使用瀏覽器的 Web Speech API，可用聲音依裝置與瀏覽器而異。
+
+### 專案檔案
+
+| 檔案 | 用途 |
+| --- | --- |
+| `index.html` | 閃卡介面、詞庫操作與本機儲存 |
+| `cloud.js` | Google 登入、Firestore 訂閱與待同步變更處理 |
+| `firebase-config.js` | Firebase Web 設定與 Google OAuth client ID |
+| `sync-model.mjs` | 卡片資料驗證、變更比對與合併 |
+| `firestore.rules` | 個人詞庫存取規則 |
+| `firebase.json` | Firebase CLI 的規則檔設定 |
+| `scripts/serve.mjs` | 本機預覽伺服器 |
+| `tests/sync-model.test.mjs` | 同步資料模型測試 |
+
+### 測試
+
+```sh
+node --test tests/sync-model.test.mjs
+```
+
+測試涵蓋不同卡片的同時更新、待同步刪除、備份還原時的合併、空詞庫與無效卡片資料。
+
+## 部署
+
+### GitHub Pages
+
+目前發布來源為 **`main` 分支的 `/ (root)`**，推送至 `main` 後由 GitHub Pages 自動部署。根目錄的 `.nojekyll` 保留靜態檔案的直接發布方式。
+
+固定網址：`https://chienikao.github.io/vocab-card/`
+
+### 改用自己的 Firebase 專案
+
+1. 建立 Firebase 專案及 Web app，在 `firebase-config.js` 填入該專案的 `firebaseConfig` 與 Google OAuth Web 用戶端的 `googleClientId`。
+2. 在 Firebase Authentication 啟用 Google 登入，加入網站與本機開發使用的授權網域。
+3. 在 Google Cloud 的 OAuth Web 用戶端設定中，加入授權 JavaScript 來源。兩處設定的格式如下：
+
+   | 設定位置 | 目前使用的值 |
+   | --- | --- |
+   | Firebase Authentication → 授權網域 | `chienikao.github.io`、`localhost` |
+   | Google Cloud OAuth → 授權 JavaScript 來源 | `https://chienikao.github.io`、`http://localhost:4173` |
+
+4. 建立 Cloud Firestore，先採用正式環境的封閉規則。
+5. 在 app 登入一次，到 Firebase Authentication 的使用者列表取得自己的 UID，替換 `firestore.rules` 中 `isOwner` 的擁有者 UID，再於 Firestore 控制台發布規則。
+6. 發布更新後重新登入，確認頁面顯示「雲端詞庫已同步」。
+
+使用 Firebase CLI 時，可在登入並確認目標專案後部署規則：
+
+```sh
+firebase deploy --only firestore:rules --project YOUR_PROJECT_ID
+```
+
+GitHub Pages 部署與 Firestore 規則發布分別執行；修改規則檔後需另行發布到 Firebase。
+
+## 來源
+
+本專案由 [Gemini Canvas 公開分享](https://gemini.google.com/share/5d18371c23d0) 還原，並加入 Google 登入、個人詞庫權限與跨裝置同步。
