@@ -116,4 +116,3 @@ firebase deploy --only firestore:rules --project YOUR_PROJECT_ID
 ```
 
 GitHub Pages 部署與 Firestore 規則發布分別執行；修改規則檔後需另行發布到 Firebase。
-
