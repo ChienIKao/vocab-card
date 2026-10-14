@@ -53,18 +53,6 @@ commute | /kəˈmjuːt/ | (v.) 通勤 | I commute by train. | 我搭火車通勤
 
 `firestore.rules` 以 Firebase 使用者 UID 限制存取，只有指定擁有者能讀寫自己的詞庫。前端使用公開的 Firebase Web 設定與 OAuth client ID，資料權限由登入身分與 Firestore 規則控制。
 
-### 目前 Firebase 專案
-
-| 項目 | 設定 |
-| --- | --- |
-| Project ID | `vocab-card-c4149` |
-| 方案 | 免費 Spark，未連結帳單帳戶 |
-| 登入方式 | Google |
-| 資料庫 | Cloud Firestore Standard |
-| 資料庫地區 | `asia-east1`（台灣） |
-
-Spark 提供免費使用額度；超過額度時服務會受限，不會自動轉為付費方案。詳見 [Firebase 方案說明](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)。
-
 ## 本機開發
 
 需安裝 Node.js。在專案目錄執行：
@@ -106,16 +94,16 @@ node --test tests/sync-model.test.mjs
 
 固定網址：`https://chienikao.github.io/vocab-card/`
 
-### 改用自己的 Firebase 專案
+### Firebase 設定
 
 1. 建立 Firebase 專案及 Web app，在 `firebase-config.js` 填入該專案的 `firebaseConfig` 與 Google OAuth Web 用戶端的 `googleClientId`。
 2. 在 Firebase Authentication 啟用 Google 登入，加入網站與本機開發使用的授權網域。
 3. 在 Google Cloud 的 OAuth Web 用戶端設定中，加入授權 JavaScript 來源。兩處設定的格式如下：
 
-   | 設定位置 | 目前使用的值 |
+   | 設定位置 | 範例 |
    | --- | --- |
-   | Firebase Authentication → 授權網域 | `chienikao.github.io`、`localhost` |
-   | Google Cloud OAuth → 授權 JavaScript 來源 | `https://chienikao.github.io`、`http://localhost:4173` |
+   | Firebase Authentication → 授權網域 | `<github-user>.github.io`、`localhost` |
+   | Google Cloud OAuth → 授權 JavaScript 來源 | `https://<github-user>.github.io`、`http://localhost:4173` |
 
 4. 建立 Cloud Firestore，先採用正式環境的封閉規則。
 5. 在 app 登入一次，到 Firebase Authentication 的使用者列表取得自己的 UID，替換 `firestore.rules` 中 `isOwner` 的擁有者 UID，再於 Firestore 控制台發布規則。
@@ -129,6 +117,3 @@ firebase deploy --only firestore:rules --project YOUR_PROJECT_ID
 
 GitHub Pages 部署與 Firestore 規則發布分別執行；修改規則檔後需另行發布到 Firebase。
 
-## 來源
-
-本專案由 [Gemini Canvas 公開分享](https://gemini.google.com/share/5d18371c23d0) 還原，並加入 Google 登入、個人詞庫權限與跨裝置同步。
