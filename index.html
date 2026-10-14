@@ -845,6 +845,7 @@
       const standalone = document.documentElement.cloneNode(true);
       standalone.querySelector('#cloudPanel')?.remove();
       standalone.querySelector('script[src="./cloud.js"]')?.remove();
+      standalone.querySelector('#storageNote').textContent = '所有變更會自動儲存在您的裝置中';
       let htmlSource = standalone.outerHTML;
       const currentDeckJson = JSON.stringify(allCards, null, 2);
       htmlSource = htmlSource.replace(
