@@ -16,7 +16,7 @@ function report(error) {
     'auth/popup-blocked': '請允許登入視窗，然後再試一次。',
     'auth/popup-closed-by-user': '登入視窗已關閉，卡片仍保存在本機。',
     'auth/network-request-failed': '登入服務暫時無法連線，請稍後再試。',
-    'permission-denied': '此帳號尚未取得詞庫存取權，請確認資料庫設定。',
+    'permission-denied': '此帳號尚未開通雲端詞庫，請聯絡管理者加入成員名單。',
     'unavailable': '目前無法連線，變更已保留在本機，稍後再同步。'
   };
   showStatus(messages[error.code] || '雲端同步暫時無法完成，卡片已保留在本機。');

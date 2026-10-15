@@ -4,7 +4,8 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth != null
         && request.auth.uid == userId
-        && request.auth.uid == 'A2uwyRujAFYyZPbzBidN3YDy6S23';
+        && exists(/databases/$(database)/documents/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.enabled == true;
     }
     match /users/{userId} {
       allow read, delete: if isOwner(userId);

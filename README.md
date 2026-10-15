@@ -1,6 +1,6 @@
 # vocab-card
 
-個人使用的英文單字卡網頁。透過分類、翻面與英文朗讀練習單字，也能建立自己的詞庫，登入 Google 後在手機與電腦之間同步。
+英文單字卡網頁。透過分類、翻面與英文朗讀練習單字，也能建立自己的詞庫，登入 Google 後在手機與電腦之間同步。
 
 **[開啟單字卡](https://chienikao.github.io/vocab-card/)** · [GitHub repository](https://github.com/ChienIKao/vocab-card)
 
@@ -17,7 +17,7 @@
 
 ## 開始使用
 
-1. 開啟[線上版本](https://chienikao.github.io/vocab-card/)，點選「使用 Google 帳戶登入」。目前的雲端詞庫只開放擁有者帳號存取。
+1. 開啟[線上版本](https://chienikao.github.io/vocab-card/)，點選「使用 Google 帳戶登入」。雲端詞庫開放已受邀的成員使用，每位成員擁有獨立的詞庫。
 2. 等待頁面上方顯示「雲端詞庫已同步」，即可開始使用或修改卡片。
 3. 在另一台裝置開啟相同網址，登入同一個 Google 帳號，即可讀取同一份詞庫。
 
@@ -51,7 +51,16 @@ commute | /kəˈmjuːt/ | (v.) 通勤 | I commute by train. | 我搭火車通勤
 
 本機詞庫與各帳號的快取分開保存。帳號首次建立雲端詞庫時，會帶入當前頁面的卡片；之後登入會直接載入已有的雲端詞庫。
 
-`firestore.rules` 以 Firebase 使用者 UID 限制存取，只有指定擁有者能讀寫自己的詞庫。前端使用公開的 Firebase Web 設定與 OAuth client ID，資料權限由登入身分與 Firestore 規則控制。
+`firestore.rules` 以 Firebase 使用者 UID 與私人成員名單限制存取。已開通的成員只能讀寫自己的詞庫；成員名單由 Firebase 控制台管理，瀏覽器端無法讀寫。前端使用公開的 Firebase Web 設定與 OAuth client ID，資料權限由登入身分與 Firestore 規則控制。
+
+### 邀請成員
+
+1. 將單字卡網址分享給對方，請對方先用 Google 登入一次。尚未開通時，頁面會顯示加入成員名單的提示。
+2. 管理者在 Firebase Authentication 的使用者列表找到對方，取得 UID。
+3. 在 Firestore 的 `members` 集合建立文件，以對方 UID 為文件 ID，加入布林欄位 `enabled`，值為 `true`。
+4. 請對方重新整理網頁，登入後即可使用自己的雲端詞庫。
+
+停用成員時，將其 `enabled` 改為 `false`。成員識別資訊只需保存在 Firebase 控制台。
 
 ## 本機開發
 
@@ -106,8 +115,8 @@ node --test tests/sync-model.test.mjs
    | Google Cloud OAuth → 授權 JavaScript 來源 | `https://<github-user>.github.io`、`http://localhost:4173` |
 
 4. 建立 Cloud Firestore，先採用正式環境的封閉規則。
-5. 在 app 登入一次，到 Firebase Authentication 的使用者列表取得自己的 UID，替換 `firestore.rules` 中 `isOwner` 的擁有者 UID，再於 Firestore 控制台發布規則。
-6. 發布更新後重新登入，確認頁面顯示「雲端詞庫已同步」。
+5. 在 app 登入一次，到 Firebase Authentication 的使用者列表取得自己的 UID。在 Firestore 建立 `members/{uid}` 文件，加入布林欄位 `enabled: true`，並於 Firestore 控制台發布 `firestore.rules`。
+6. 發布更新後重新登入，確認頁面顯示「雲端詞庫已同步」。其餘成員依「邀請成員」步驟開通。
 
 使用 Firebase CLI 時，可在登入並確認目標專案後部署規則：
 
