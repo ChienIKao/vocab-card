@@ -1,4 +1,5 @@
-import { firebaseConfig, googleClientId } from './firebase-config.js';
+import { firebaseConfig } from './firebase-config.js';
+import { connectGoogle, registerAccessRequest } from './firebase-client.js';
 import { deckChanges, mergeDeck, normalizeDeck } from './sync-model.mjs';
 
 const app = window.vocabApp;
@@ -16,7 +17,7 @@ function report(error) {
     'auth/popup-blocked': '請允許登入視窗，然後再試一次。',
     'auth/popup-closed-by-user': '登入視窗已關閉，卡片仍保存在本機。',
     'auth/network-request-failed': '登入服務暫時無法連線，請稍後再試。',
-    'permission-denied': '此帳號尚未開通雲端詞庫，請聯絡管理者加入成員名單。',
+    'permission-denied': '目前無法存取雲端詞庫，請重新登入或聯絡管理者。',
     'unavailable': '目前無法連線，變更已保留在本機，稍後再同步。'
   };
   showStatus(messages[error.code] || '雲端同步暫時無法完成，卡片已保留在本機。');
@@ -33,46 +34,13 @@ if (!firebaseConfig) {
 }
 
 async function start() {
-  const [core, authApi, store] = await Promise.all([
-    import('https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js'),
-    import('https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js'),
-    import('https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js')
-  ]);
-  const firebaseApp = core.initializeApp(firebaseConfig);
-  const auth = authApi.getAuth(firebaseApp);
-  const db = store.getFirestore(firebaseApp);
-  await new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('無法載入 Google 登入服務'));
-    document.head.appendChild(script);
-  });
-  google.accounts.id.initialize({
-    client_id: googleClientId,
-    callback: async response => {
-      login.style.pointerEvents = 'none';
-      showStatus('正在登入…');
-      try {
-        const credential = authApi.GoogleAuthProvider.credential(response.credential);
-        await authApi.signInWithCredential(auth, credential);
-      } catch (error) { report(error); }
-      finally { login.style.pointerEvents = ''; }
-    }
-  });
-  login.replaceChildren();
-  google.accounts.id.renderButton(login, { type: 'standard', theme: 'outline', size: 'medium', text: 'signin_with', shape: 'pill', locale: 'zh_TW' });
-  logout.addEventListener('click', () => {
-    google.accounts.id.disableAutoSelect();
-    authApi.signOut(auth).catch(report);
-  });
-
-  authApi.onAuthStateChanged(auth, user => {
+  await connectGoogle({ login, logout, onError: report, onUser(user, { db, store }) {
     session?.stop();
     session = null;
     login.classList.toggle('hidden', !!user);
     logout.classList.toggle('hidden', !user);
     account.textContent = user?.displayName || '';
+    document.getElementById('adminLink').classList.add('hidden');
     document.getElementById('storageNote').textContent = user
       ? '變更自動儲存並同步至雲端；同步狀態顯示於頁面上方'
       : '所有變更會自動儲存在您的裝置中';
@@ -85,8 +53,62 @@ async function start() {
     }
     showStatus('正在讀取雲端詞庫…');
     app.setEditingEnabled(false);
-    session = createSession(user.uid, seed, db, store);
+    session = createAccountSession(user, seed, db, store);
+  } });
+}
+
+function createAccountSession(user, seed, db, store) {
+  let deckSession = null;
+  let stopped = false;
+  let membershipKnown = false;
+  let enabled = false;
+  let requestFailed = false;
+  let requestSent = false;
+  let membershipExists = false;
+  function pendingStatus() {
+    if (stopped || !membershipKnown || enabled) return;
+    showStatus(membershipExists ? '雲端詞庫權限已停用，請聯絡管理者。'
+      : requestFailed ? '無法送出使用申請，請重新整理再試一次。'
+      : requestSent ? '使用申請已送出，等待管理者核准。' : '正在送出使用申請…');
+  }
+  registerAccessRequest(user, db, store).then(() => {
+    requestSent = true;
+    pendingStatus();
+  }).catch(error => {
+    if (stopped) return;
+    requestFailed = true;
+    pendingStatus();
+    console.error('Access request:', error.code || error.message);
   });
+  const stopAdmin = store.onSnapshot(store.doc(db, 'admins', user.uid), snapshot => {
+    if (!stopped) document.getElementById('adminLink').classList.toggle('hidden', snapshot.data()?.enabled !== true);
+  }, () => { if (!stopped) document.getElementById('adminLink').classList.add('hidden'); });
+  const stopMembership = store.onSnapshot(store.doc(db, 'members', user.uid), snapshot => {
+    if (stopped) return;
+    membershipKnown = true;
+    membershipExists = snapshot.exists();
+    enabled = snapshot.data()?.enabled === true;
+    if (enabled) {
+      if (!deckSession) {
+        showStatus('正在讀取雲端詞庫…');
+        deckSession = createSession(user.uid, seed, db, store);
+      }
+    } else {
+      deckSession?.stop();
+      deckSession = null;
+      app.setEditingEnabled(false);
+      pendingStatus();
+    }
+  }, error => { if (!stopped) report(error); });
+  return {
+    enqueue(change) { deckSession?.enqueue(change); },
+    stop() {
+      stopped = true;
+      deckSession?.stop();
+      stopAdmin();
+      stopMembership();
+    }
+  };
 }
 
 function createSession(uid, seed, db, store) {

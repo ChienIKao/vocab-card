@@ -1,11 +1,44 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
+    }
     function isOwner(userId) {
       return request.auth != null
         && request.auth.uid == userId
         && exists(/databases/$(database)/documents/members/$(request.auth.uid))
         && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.enabled == true;
+    }
+    match /admins/{userId} {
+      allow get: if signedIn() && request.auth.uid == userId;
+    }
+    match /accessRequests/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.resource.data.keys().hasAll(['email', 'displayName', 'requestedAt'])
+        && request.resource.data.keys().hasOnly(['email', 'displayName', 'requestedAt'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 120
+        && request.resource.data.requestedAt == request.time;
+    }
+    match /members/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasAll(['enabled'])
+        && request.resource.data.keys().hasOnly(['enabled'])
+        && request.resource.data.enabled is bool
+        && (request.auth.uid != userId || request.resource.data.enabled == true);
     }
     match /users/{userId} {
       allow read, delete: if isOwner(userId);

@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 
-const files = new Set(['index.html', 'cloud.js', 'firebase-config.js', 'sync-model.mjs']);
+const files = new Set(['index.html', 'cloud.js', 'firebase-config.js', 'firebase-client.js', 'sync-model.mjs', 'admin.html', 'admin.js', 'member-model.mjs']);
 const root = new URL('../', import.meta.url);
 createServer(async (request, response) => {
   const path = new URL(request.url, 'http://localhost').pathname.replace(/^\/vocab-card\//, '/');

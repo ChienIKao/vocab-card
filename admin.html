@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>成員管理 | vocab-card</title>
+  <style>
+    :root{color-scheme:light;--paper:#faf8f5;--ink:#292524;--muted:#78716c;--line:#e7e0d7;--green:#4d7864;--brown:#b85d3d}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Noto Sans TC",sans-serif}button,input{font:inherit}button,a,input{outline-offset:4px}a{color:var(--green)}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}.hidden{display:none!important}
+    header{border-bottom:1px solid var(--line);background:#fffdf9}.bar,main{max-width:960px;margin:auto;padding:24px}.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.brand{text-decoration:none;color:var(--ink);font-weight:650}.account{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.small{font-size:13px;color:var(--muted)}h1{font-size:30px;letter-spacing:-.03em;margin:20px 0 8px}p{margin:0 0 16px}.status{background:#efe9e0;border-radius:12px;padding:14px 16px;margin:24px 0}.toolbar{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:28px 0 18px}.filters{display:flex;gap:6px;flex-wrap:wrap}.filter,.secondary{border:1px solid var(--line);background:white;border-radius:10px;padding:9px 12px;min-height:44px;color:var(--ink)}.filter[aria-pressed=true]{background:var(--ink);color:white;border-color:var(--ink)}input{min-height:44px;max-width:100%;width:260px;border:1px solid var(--line);border-radius:10px;background:white;padding:9px 12px}ul{padding:0;list-style:none;margin:0}.member{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px;background:white;border:1px solid var(--line);border-radius:14px;margin:10px 0}.identity{min-width:0}.name{font-weight:650;font-size:16px}.email{overflow-wrap:anywhere}.actions{display:flex;align-items:center;gap:12px;flex-shrink:0}.badge{font-size:12px;background:#f0ece6;padding:4px 9px;border-radius:20px;white-space:nowrap}.active{background:#e8f0eb;color:#345b47}.disabled{background:#f7e8e0;color:#89472f}.primary{border:0;background:var(--green);color:white;border-radius:10px;padding:10px 16px;min-height:44px}.empty{padding:48px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}.help{border-top:1px solid var(--line);margin-top:32px;padding-top:20px}#loginPanel{padding:24px 0}#feedback{min-height:24px;color:var(--green);margin:10px 0}dialog{border:1px solid var(--line);border-radius:18px;max-width:420px;width:calc(100% - 32px);padding:24px;color:var(--ink)}dialog::backdrop{background:#29252480}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}dialog h2{margin-top:0;font-size:20px}#disableIdentity{overflow-wrap:anywhere}
+    @media(max-width:600px){.bar,main{padding:18px}h1{font-size:27px}.member{align-items:stretch;flex-direction:column;padding:16px}.actions{justify-content:space-between}input{width:100%}.toolbar{align-items:stretch}.account{font-size:13px}}
+  </style>
+</head>
+<body>
+  <header><div class="bar"><a class="brand" href="./">← 回到單字卡</a><div class="account"><span id="accountName" class="small"></span><button id="googleLogoutBtn" class="secondary hidden" type="button">登出</button></div></div></header>
+  <main>
+    <h1>成員管理</h1>
+    <p class="small">核准新成員，管理每個帳號的雲端詞庫使用權限。</p>
+    <div id="adminStatus" class="status" role="status" aria-live="polite">正在載入登入服務…</div>
+    <div id="loginPanel"><div id="googleLoginBtn">正在載入 Google 登入…</div></div>
+    <section id="management" class="hidden" aria-label="成員清單">
+      <div class="toolbar">
+        <div class="filters" role="group" aria-label="篩選成員狀態">
+          <button class="filter" data-filter="pending" aria-pressed="true" type="button">待核准 <span id="pendingCount">0</span></button>
+          <button class="filter" data-filter="active" aria-pressed="false" type="button">已開通 <span id="activeCount">0</span></button>
+          <button class="filter" data-filter="disabled" aria-pressed="false" type="button">已停用 <span id="disabledCount">0</span></button>
+        </div>
+        <input id="memberSearch" type="search" aria-label="搜尋姓名或 Email" placeholder="搜尋姓名或 Email">
+      </div>
+      <p id="feedback" role="status" aria-live="polite"></p>
+      <ul id="memberList" aria-label="帳號與使用權限"></ul>
+      <p id="emptyState" class="empty hidden">目前沒有待核准的申請。</p>
+      <div class="help small"><p>邀請方式：將單字卡網址分享給對方，請對方先用 Google 登入，申請就會出現在「待核准」。</p><p>每位成員擁有獨立詞庫。停用會關閉雲端存取，原有卡片會保留。</p></div>
+    </section>
+  </main>
+  <dialog id="disableDialog" aria-labelledby="disableTitle"><h2 id="disableTitle">停用成員？</h2><p id="disableIdentity"></p><p class="small">對方將無法同步雲端詞庫，原有卡片會保留。你可以隨時重新啟用。</p><form method="dialog" class="dialog-actions"><button class="secondary" value="cancel">取消</button><button class="primary" value="confirm">確認停用</button></form></dialog>
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>

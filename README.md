@@ -12,12 +12,12 @@
 - 正面顯示單字、音標與中文意思，背面顯示英文例句、翻譯與補充提示。
 - 支援英文朗讀、翻面、切換卡片與隨機洗牌；電腦可用空白鍵翻面，手機可左右滑動切換卡片。
 - 新增、編輯、刪除、搜尋與批次匯入單字卡。
-- Google OIDC 登入與 Firestore 雲端同步。
+- Google OIDC 登入與 Firestore 雲端同步，以及管理者專用的成員核准頁面。
 - 匯出／還原 JSON 備份，以及下載包含目前詞庫的獨立 HTML 閃卡檔。
 
 ## 開始使用
 
-1. 開啟[線上版本](https://chienikao.github.io/vocab-card/)，點選「使用 Google 帳戶登入」。雲端詞庫開放已受邀的成員使用，每位成員擁有獨立的詞庫。
+1. 開啟[線上版本](https://chienikao.github.io/vocab-card/)，點選「使用 Google 帳戶登入」。新帳號會自動送出申請，核准後即可使用獨立的雲端詞庫。
 2. 等待頁面上方顯示「雲端詞庫已同步」，即可開始使用或修改卡片。
 3. 在另一台裝置開啟相同網址，登入同一個 Google 帳號，即可讀取同一份詞庫。
 
@@ -51,16 +51,17 @@ commute | /kəˈmjuːt/ | (v.) 通勤 | I commute by train. | 我搭火車通勤
 
 本機詞庫與各帳號的快取分開保存。帳號首次建立雲端詞庫時，會帶入當前頁面的卡片；之後登入會直接載入已有的雲端詞庫。
 
-`firestore.rules` 以 Firebase 使用者 UID 與私人成員名單限制存取。已開通的成員只能讀寫自己的詞庫；成員名單由 Firebase 控制台管理，瀏覽器端無法讀寫。前端使用公開的 Firebase Web 設定與 OAuth client ID，資料權限由登入身分與 Firestore 規則控制。
+`firestore.rules` 以 Firebase 使用者 UID 與私人成員名單限制存取。已開通的成員只能讀寫自己的詞庫；管理者能查看申請與管理成員資格。前端使用公開的 Firebase Web 設定與 OAuth client ID，資料權限由登入身分與 Firestore 規則控制。
 
 ### 邀請成員
 
-1. 將單字卡網址分享給對方，請對方先用 Google 登入一次。尚未開通時，頁面會顯示加入成員名單的提示。
-2. 管理者在 Firebase Authentication 的使用者列表找到對方，取得 UID。
-3. 在 Firestore 的 `members` 集合建立文件，以對方 UID 為文件 ID，加入布林欄位 `enabled`，值為 `true`。
-4. 請對方重新整理網頁，登入後即可使用自己的雲端詞庫。
+1. 將單字卡網址分享給對方，請對方用 Google 登入，頁面會自動送出使用申請。
+2. 管理者點選單字卡上方的「成員管理」，或開啟[管理頁面](https://chienikao.github.io/vocab-card/admin.html)。
+3. 在「待核准」找到對方的 Email，點選「核准」。對方已開啟的頁面會自動開始載入雲端詞庫。
 
-停用成員時，將其 `enabled` 改為 `false`。成員識別資訊只需保存在 Firebase 控制台。
+在「已開通」清單可停用成員，之後也能重新啟用；停用會關閉雲端存取並保留原有卡片。管理者無法停用自己的帳號。
+
+申請資料保存在 `accessRequests/{uid}`，包含 Google 帳號的 Email、顯示名稱與申請時間；使用者只能建立及查看自己的申請，管理者才能讀取整份清單。成員資格存於 `members/{uid}`，管理者身分存於 `admins/{uid}`。管理者身分只能透過 Firebase 控制台等受信任的管理工具設定。
 
 ## 本機開發
 
@@ -80,6 +81,9 @@ node scripts/serve.mjs
 | --- | --- |
 | `index.html` | 閃卡介面、詞庫操作與本機儲存 |
 | `cloud.js` | Google 登入、Firestore 訂閱與待同步變更處理 |
+| `firebase-client.js` | 共用 Google 登入與使用申請登記 |
+| `admin.html`、`admin.js` | 成員管理介面與核准／停用操作 |
+| `member-model.mjs` | 成員清單合併、狀態與搜尋 |
 | `firebase-config.js` | Firebase Web 設定與 Google OAuth client ID |
 | `sync-model.mjs` | 卡片資料驗證、變更比對與合併 |
 | `firestore.rules` | 個人詞庫存取規則 |
@@ -90,10 +94,10 @@ node scripts/serve.mjs
 ### 測試
 
 ```sh
-node --test tests/sync-model.test.mjs
+node --test
 ```
 
-測試涵蓋不同卡片的同時更新、待同步刪除、備份還原時的合併、空詞庫與無效卡片資料。
+測試涵蓋卡片同步資料的合併與驗證，以及成員清單的狀態判定與搜尋。
 
 ## 部署
 
@@ -115,8 +119,8 @@ node --test tests/sync-model.test.mjs
    | Google Cloud OAuth → 授權 JavaScript 來源 | `https://<github-user>.github.io`、`http://localhost:4173` |
 
 4. 建立 Cloud Firestore，先採用正式環境的封閉規則。
-5. 在 app 登入一次，到 Firebase Authentication 的使用者列表取得自己的 UID。在 Firestore 建立 `members/{uid}` 文件，加入布林欄位 `enabled: true`，並於 Firestore 控制台發布 `firestore.rules`。
-6. 發布更新後重新登入，確認頁面顯示「雲端詞庫已同步」。其餘成員依「邀請成員」步驟開通。
+5. 在 app 登入一次，到 Firebase Authentication 的使用者列表取得自己的 UID。在 Firestore 建立 `members/{uid}` 與 `admins/{uid}` 文件，兩份文件都加入布林欄位 `enabled: true`，再於 Firestore 控制台發布 `firestore.rules`。
+6. 發布更新後重新登入，確認頁面顯示「雲端詞庫已同步」及「成員管理」入口。其餘成員依「邀請成員」步驟開通。
 
 使用 Firebase CLI 時，可在登入並確認目標專案後部署規則：
 
